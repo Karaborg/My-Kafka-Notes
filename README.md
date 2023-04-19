@@ -14,3 +14,5 @@ After making sure our containers are up and running, let's dive into our Kafka c
 4. List topics: `kafka-topics --list --bootstrap-server localhost:9092`
 5. List consumers: `kafka-consumer-groups --bootstrap-server localhost:9092 --list`
 6. Check if consumer has any lag: `kafka-consumer-groups --bootstrap-server localhost:9092 --group <CONSUMER_NAME> --describe`
+
+> You can also see your topics and messages from [Kafdrop](http://localhost:9000/) since we already started.
