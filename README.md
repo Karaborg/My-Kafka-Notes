@@ -1,6 +1,6 @@
 # Kafka
 
-## Usefull Commands:
+## Useful Commands:
 Let's start with starting Zookeeper, Kafka and Kafdrop with the command:
 `docker-compose up -d`
 
