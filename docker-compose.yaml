@@ -6,64 +6,57 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-  broker:
+    ports:
+      - "2181:2181"
+  kafka:
     image: confluentinc/cp-kafka:7.0.1
-    container_name: broker
+    container_name: kafka
     ports:
       - "9092:9092"
-      - "2181:2181"
     depends_on:
       - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-  kafdrop:
-    image: obsidiandynamics/kafdrop
-    restart: "no"
-    container_name: kafdrop
-    ports:
-      - "9000:9000"
-    environment:
-      KAFKA_BROKERCONNECT: "broker:29092"
-      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
-    depends_on:
-      - "broker"
-#  prometheus:
-#    image: prom/prometheus
-#    container_name: prometheus
-#    environment:
-#      - ./etc/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
-#    command: "--config.file=/etc/prometheus/prometheus.yml"
-#    ports:
-#      - "9090:9090"
-#  grafana:
-#    image: "grafana/grafana"
-#    container_name: grafana
-#    ports:
-#     - "3000:3000"
-#    environment:
-#      GF_PATHS_DATA : /var/lib/grafana
-#      GF_SECURITY_ADMIN_PASSWORD : kafka
-#    volumes:
-#      - ./grafana/provisioning:/etc/grafana/provisioning
-#      - ./grafana/dashboards:/var/lib/grafana/dashboards
-#      - ./grafana/usr/share/grafana/conf/defaults.ini:/usr/share/grafana/conf/defaults.ini
-#      - ./grafana/etc/grafana/grafana.ini:/etc/grafana/grafana.ini
-#    depends_on:
-#      - prometheus
-  burrow:
-    image: solsson/burrow
-    container_name: burrow
+      #KAFKA_OPTS: -javaagent:/usr/local/libs/jmx_prometheus_javaagent-0.17.2.jar=7075:/usr/local/config/sample_jmx_exporter.yml
     volumes:
-      - ./burrow/etc/burrow:/etc/burrow/
-      - ./burrow/tmp/burrow:/var/tmp/burrow
+      - ./kafka/libs:/usr/local/libs
+      - ./kafka/config:/usr/local/config
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/etc/prometheus:/etc/prometheus
+    command: 
+      - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
-      - 8000:8000
+      - "9090:9090"
+  grafana:
+    image: "grafana/grafana"
+    container_name: grafana
+    ports:
+     - "3000:3000"
+    environment:
+      GF_PATHS_DATA : /var/lib/grafana
+      GF_SECURITY_ADMIN_PASSWORD : kafka
+    volumes:
+      - ./grafana/var/lib/grafana:/var/lib/grafana
     depends_on:
-      - zookeeper
-      - broker
+      - prometheus
+  kafka-exporter:
+    image: danielqsj/kafka-exporter
+    container_name: exporter
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka
+    #entrypoint: ["run.sh"]
+    command:
+      - --kafka.server=kafka:9092
+    restart: on-failure
+# docker exec -it grafana grafana-cli admin reset-admin-password admin
