@@ -59,4 +59,3 @@ services:
     command:
       - --kafka.server=kafka:9092
     restart: on-failure
-# docker exec -it grafana grafana-cli admin reset-admin-password admin
